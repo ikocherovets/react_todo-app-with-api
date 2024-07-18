@@ -23,7 +23,7 @@ export const Todo: FC<Props> = ({ todo, onDelete, onEdit, idsProccesing }) => {
       await onDelete(todo.id);
     } catch {
       // eslint-disable-next-line no-console
-      throw new Error('Error editing todo');
+      throw new Error('Error deleting todo');
     } finally {
       setLoading(false);
     }

@@ -78,7 +78,7 @@ export const List: FC<Props> = ({
             </div>
           </div>
 
-          {/* This todo is in loadind state */}
+          {/* This todo is in loading state */}
         </>
       )}
     </section>
