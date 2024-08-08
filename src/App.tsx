@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import {
   USER_ID,
@@ -15,6 +15,9 @@ import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { Todo } from './types/Todo';
 import { Filter } from './types/Filter';
+import { ErrorMessages } from './types/ErrorMessages';
+import { useFilterTodos } from './services/useFilterTodos';
+import { useTodosCountByStatus } from './services/todosCountByStatus';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -28,8 +31,7 @@ export const App: React.FC = () => {
     const formattedTitle = title.trim();
 
     if (!formattedTitle) {
-      setErrorMessage('Title should not be empty');
-
+      setErrorMessage(ErrorMessages.TitleEmpty);
       return;
     }
 
@@ -46,8 +48,8 @@ export const App: React.FC = () => {
 
       setTodos(currentTodos => [...currentTodos, createdTodo]);
     } catch {
-      setErrorMessage('Unable to add a todo');
-      throw new Error('Unable to add a todo');
+      setErrorMessage(ErrorMessages.UnableToAddTodo);
+      throw new Error(ErrorMessages.UnableToAddTodo);
     } finally {
       setTempTodoTitle(null);
     }
@@ -59,7 +61,7 @@ export const App: React.FC = () => {
 
       setTodos(currentTodos => currentTodos.filter(todo => todo.id !== id));
     } catch {
-      setErrorMessage('Unable to delete a todo');
+      setErrorMessage(ErrorMessages.UnableToDeleteTodo);
     }
   };
 
@@ -77,16 +79,16 @@ export const App: React.FC = () => {
         }),
       );
     } catch {
-      setErrorMessage('Unable to update a todo');
-      throw new Error('Unable to update a todo');
+      setErrorMessage(ErrorMessages.UnableToUpdateTodo);
+      throw new Error(ErrorMessages.UnableToUpdateTodo);
     }
   };
 
   const clearCompletedTodos = async () => {
-    const filteredTodos = todos.filter(todo => todo.completed);
-    const completedIds = filteredTodos.map(todo => todo.id);
+    const completedTodos = todos.filter(todo => todo.completed);
+    const completedTodoIds = completedTodos.map(todo => todo.id);
 
-    setIdsProccesing(completedIds);
+    setIdsProccesing(completedTodoIds);
 
     try {
       const deleteCallback = async (todo: Todo) => {
@@ -95,7 +97,7 @@ export const App: React.FC = () => {
 
           return { id: todo.id, status: 'resolved' };
         } catch {
-          setErrorMessage('Unable to delete a todo');
+          setErrorMessage(ErrorMessages.UnableToDeleteTodo);
 
           return { id: todo.id, status: 'rejected' };
         } finally {
@@ -103,10 +105,11 @@ export const App: React.FC = () => {
         }
       };
 
-      // filters by resolved & filter currentTodos
-      const res = await Promise.allSettled(filteredTodos.map(deleteCallback));
+      const result = await Promise.allSettled(
+        completedTodos.map(deleteCallback),
+      );
 
-      const resolvedIds = res.reduce(
+      const resolvedIds = result.reduce(
         (acc, item) => {
           if (item.status === 'rejected') {
             return acc;
@@ -122,45 +125,15 @@ export const App: React.FC = () => {
       );
 
       setTodos(currentTodos =>
-        currentTodos.filter(todo => {
-          if (resolvedIds[todo.id] && todo.completed) {
-            return false;
-          }
-
-          return true;
-        }),
+        currentTodos.filter(todo => !(resolvedIds[todo.id] && todo.completed)),
       );
     } catch {
-      setErrorMessage('Unable to clear completed todos');
+      setErrorMessage(ErrorMessages.UnableToClearCompletedTodos);
     }
   };
 
-  const filterTodos = useMemo(() => {
-    let filteredTodos = todos;
-
-    switch (filter) {
-      case Filter.Active:
-        filteredTodos = todos.filter(todo => !todo.completed);
-        break;
-      case Filter.Completed:
-        filteredTodos = todos.filter(todo => todo.completed);
-        break;
-      default:
-        break;
-    }
-
-    return filteredTodos;
-  }, [todos, filter]);
-
-  const todosCount = useMemo(() => {
-    const active = todos.filter(({ completed }) => !completed).length;
-    const completed = todos.length - active;
-
-    return {
-      active,
-      completed,
-    };
-  }, [todos]);
+  const filteredTodos = useFilterTodos(todos, filter);
+  const todosCount = useTodosCountByStatus(todos);
 
   const handleToggleAll = async () => {
     if (todosCount.completed === todos.length) {
@@ -173,7 +146,7 @@ export const App: React.FC = () => {
 
         setTodos(updatedTodos);
       } catch {
-        setErrorMessage('Unable to update todos');
+        setErrorMessage(ErrorMessages.UnableToUpdateTodo);
       } finally {
         setIdsProccesing([]);
       }
@@ -181,14 +154,14 @@ export const App: React.FC = () => {
       return;
     }
 
-    const filteredTodos = todos.filter(todo => !todo.completed);
-    const activeIds = filteredTodos.map(todo => todo.id);
+    const activeTodos = todos.filter(todo => !todo.completed);
+    const activeIds = activeTodos.map(todo => todo.id);
 
     setIdsProccesing(activeIds);
 
     try {
       await Promise.all(
-        filteredTodos.map(todo => patchTodo(todo.id, { completed: true })),
+        activeTodos.map(todo => patchTodo(todo.id, { completed: true })),
       );
       setTodos(currentTodos =>
         currentTodos.map(todo => {
@@ -200,7 +173,7 @@ export const App: React.FC = () => {
         }),
       );
     } catch {
-      setErrorMessage('Unable to update todos');
+      setErrorMessage(ErrorMessages.UnableToUpdateTodo);
     } finally {
       setIdsProccesing([]);
     }
@@ -209,7 +182,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     getTodos()
       .then(setTodos)
-      .catch(() => setErrorMessage('Unable to load todos'));
+      .catch(() => setErrorMessage(ErrorMessages. UnableToLoadTodos));
   }, []);
 
   useEffect(() => {
@@ -233,14 +206,14 @@ export const App: React.FC = () => {
         />
 
         <List
-          todos={filterTodos}
+          todos={filteredTodos}
           tempTodoTitle={tempTodoTitle}
           onDelete={handleDeleteTodo}
           onEdit={handleEditTodo}
           idsProccesing={idsProccesing}
         />
 
-        {/* Hide the footer if there are no todos */}
+
         {todos.length > 0 && (
           <Footer
             onFilter={setFilter}
@@ -251,8 +224,7 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {/* DON'T use conditional rendering to hide the notification */}
-      {/* Add the 'hidden' class to hide the message smoothly */}
+      
       <ErrorMessage
         message={errorMessage}
         onClose={() => setErrorMessage('')}

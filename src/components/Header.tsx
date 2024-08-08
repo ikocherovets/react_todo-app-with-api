@@ -32,24 +32,23 @@ export const Header: FC<Props> = ({
   };
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    inputRef.current?.focus();
   }, [inputRef, loading]);
+
+  const toggleAllButton = (todosCount.active > 0 || todosCount.completed > 0) && (
+    <button
+      type="button"
+      className={cn('todoapp__toggle-all', {
+        active: !todosCount.active,
+      })}
+      data-cy="ToggleAllButton"
+      onClick={onToggleAll}
+    />
+  );
 
   return (
     <header className="todoapp__header">
-      {/* this button should have `active` class only if all todos are completed */}
-      {(todosCount.active > 0 || todosCount.completed > 0) && (
-        <button
-          type="button"
-          className={cn('todoapp__toggle-all', {
-            active: todosCount.active === 0,
-          })}
-          data-cy="ToggleAllButton"
-          onClick={onToggleAll}
-        />
-      )}
+     {toggleAllButton}
 
       {/* Add a todo on form submit */}
       <form onSubmit={handleSubmit}>

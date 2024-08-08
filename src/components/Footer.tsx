@@ -48,7 +48,7 @@ export const Footer: FC<Props> = ({
         type="button"
         className="todoapp__clear-completed"
         data-cy="ClearCompletedButton"
-        disabled={todosCount.completed === 0}
+        disabled={!todosCount.completed}
         onClick={onClear}
       >
         Clear completed

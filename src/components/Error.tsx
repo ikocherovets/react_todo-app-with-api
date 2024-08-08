@@ -21,7 +21,6 @@ export const ErrorMessage: FC<Props> = ({ message, onClose }) => {
       })}
     >
       <button data-cy="HideErrorButton" type="button" className="delete" />
-      {/* show only one message at a time */}
       {message}
     </div>
   );

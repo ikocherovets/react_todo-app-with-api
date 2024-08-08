@@ -21,9 +21,6 @@ export const Todo: FC<Props> = ({ todo, onDelete, onEdit, idsProccesing }) => {
     try {
       setLoading(true);
       await onDelete(todo.id);
-    } catch {
-      // eslint-disable-next-line no-console
-      throw new Error('Error deleting todo');
     } finally {
       setLoading(false);
     }
@@ -34,8 +31,6 @@ export const Todo: FC<Props> = ({ todo, onDelete, onEdit, idsProccesing }) => {
       setLoading(true);
       await onEdit(todo.id, data);
     } catch {
-      // eslint-disable-next-line no-console
-      console.log('Error editing todo');
       throw new Error('Error editing todo');
     } finally {
       setLoading(false);
